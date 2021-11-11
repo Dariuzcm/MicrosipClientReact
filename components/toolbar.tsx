@@ -3,21 +3,20 @@ import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import { useRouter } from 'next/router';
-import { AppBar, Box, Menu, MenuItem, Toolbar } from '@material-ui/core';
+import { AppBar, Box, Menu, MenuItem, Toolbar, Tooltip } from '@material-ui/core';
 import { Typography } from '@mui/material';
+import { useDispatch, useSelector } from 'react-redux';
+import { logOut } from '../Models/Users/UsersSlice';
+import { RootState } from '../store';
 
 
 export default function ButtonAppBar() {
 
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const router = useRouter();
-
-  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
+  const dispatch = useDispatch();
+  const { user } = useSelector((reduxState: RootState) => reduxState).users.currentUser;
+ const handleClose = () => {
+    dispatch(logOut())
   };
 
   const navigation = router.pathname;
@@ -26,47 +25,26 @@ export default function ButtonAppBar() {
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
         <Toolbar>
-          <IconButton
-            size="large"
-            edge="start"
-            color="inherit"
-            aria-label="menu"
-            sx={{ mr: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             {navigation === '/' ? 'Administración de Articulos': navigation}
           </Typography>
-          <div>
+          <div style={{display: 'flex', alignItems: 'center'}}>
+          <Typography variant="caption" component="div" sx={{ flexGrow: 1 }}>
+            {user && user.name}
+          </Typography>
+            <Tooltip title={'Desconectar'}>
               <IconButton
                 size="large"
                 aria-label="account of current user"
                 aria-controls="menu-appbar"
                 aria-haspopup="true"
-                onClick={handleMenu}
+                onClick={handleClose}
                 color="inherit"
-              >
+                >
                 <AccountCircle />
               </IconButton>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorEl}
-                anchorOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                keepMounted
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                open={Boolean(anchorEl)}
-                onClose={handleClose}
-              >
-                <MenuItem onClick={handleClose}>Desconectar</MenuItem>
-              </Menu>
-            </div>
+            </Tooltip>
+          </div>
         </Toolbar>
       </AppBar>
     </Box>

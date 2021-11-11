@@ -1,6 +1,7 @@
 import { Action, createSlice, PayloadAction, ThunkAction } from "@reduxjs/toolkit";
 import axios from "axios";
 import { RootState } from "../../store";
+import { setCurrentUser } from "../Users/UsersSlice";
 import { Article } from "./Article";
 
 export type NorificationSnack = {
@@ -56,6 +57,9 @@ const slice = createSlice({
         action.payload
       ]
     },
+    setStatus: (state, action: PayloadAction<'busy' | 'none'>) => {
+      state.status = action.payload;
+    },
   },
 });
 
@@ -73,20 +77,33 @@ export const {
 
 export default articlesReducer;
 
-export const getAllArticles = (): ThunkAction<Promise<string>, RootState, unknown, Action<unknown>> => {
+export const getAllArticles = (): ThunkAction<void, RootState, unknown, Action<unknown>> => {
   return async (dispatch, getState) => {
     const token = getState().users.currentUser?.token;
     if (!token) {
-      return 'fail';
+      return ;
     }
-    const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/articles`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-    dispatch(slice.actions.setArticles(data));
-    return 'done';
+    try {
+      const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/articles`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      dispatch(slice.actions.setArticles(data));
+    } catch (err: any) {
+      const error = err.toJSON();
+      dispatch(slice.actions.enqueueNotification({
+        variant: 'error',
+        message: error.message
+      }))
+      if (error.status === 401) {
+        dispatch(setCurrentUser({
+          user: null,
+          token: null
+        }))
+      }
+    }
   }
 }
 
@@ -96,6 +113,7 @@ export const createArticle = (article: Article): ThunkAction<void, RootState, un
     if (!token) {
       return;
     }
+    dispatch(slice.actions.setStatus('busy'))
     try {
       const { name, price, cost, description } = article;
       const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/articles`,
@@ -113,15 +131,24 @@ export const createArticle = (article: Article): ThunkAction<void, RootState, un
         variant: 'success',
         message: 'Articulo añadido'
       }))
-    } catch (error: any) {
+    } catch (err: any) {
+      const error = err.toJSON();
       dispatch(slice.actions.enqueueNotification({
         variant: 'error',
         message: error.message
       }))
+      if (error.status === 401) {
+        dispatch(setCurrentUser({
+          user: null,
+          token: null
+        }))
+      }
     } finally {
       dispatch(getAllArticles())
       dispatch(slice.actions.setMutatedArticle(null));
       dispatch(slice.actions.setActionArticle(false));
+      dispatch(slice.actions.setStatus('none'))
+
     }
   };
 };
@@ -132,9 +159,10 @@ export const updateArticle = (article: Article): ThunkAction<void, RootState, un
     if (!token) {
       return;
     }
+    
+    dispatch(slice.actions.setStatus('busy'))
     try {
       const { name, price, cost, description, id } = article;
-      console.log(article)
       const { data } = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/api/articles/${id}`,
         {
           name, price, cost, description
@@ -151,15 +179,22 @@ export const updateArticle = (article: Article): ThunkAction<void, RootState, un
         message: `Articulo ${data.name} Editado`
       }))
       dispatch(getAllArticles())
-    } catch (error: any) {
-      console.log(error)
+    } catch (err: any) {
+      const error = err.toJSON();
       dispatch(slice.actions.enqueueNotification({
         variant: 'error',
         message: error.message
       }))
+      if (error.status === 401) {
+        dispatch(setCurrentUser({
+          user: null,
+          token: null
+        }))
+      }
     } finally {
       dispatch(slice.actions.setMutatedArticle(null));
       dispatch(slice.actions.setActionArticle(false));
+      dispatch(slice.actions.setStatus('none'))
     }
   };
 };
@@ -171,8 +206,9 @@ export const deleteArticle = (): ThunkAction<void, RootState, unknown, Action<un
     if (!token) {
       return;
     }
-    console.log(selectedArticles.length)
-    if(selectedArticles.length === 0) {
+    
+    dispatch(slice.actions.setStatus('busy'))
+    if (selectedArticles.length === 0) {
       return;
     }
     const promises: Promise<void>[] = [];
@@ -188,18 +224,33 @@ export const deleteArticle = (): ThunkAction<void, RootState, unknown, Action<un
         ));
     }
     try {
-      await Promise.all(promises);
+      const prom = await Promise.all(promises).then(()=>{
+        dispatch(slice.actions.setStatus('none'))
+        dispatch(slice.actions.enqueueNotification({
+          variant: 'warning',
+          message: `Articulo ${promises.length} eliminados`
+        }))
+      });
+      
       dispatch(slice.actions.enqueueNotification({
         variant: 'warning',
         message: `Articulo ${promises.length} eliminados`
       }))
-    } catch (error: any) {
-      console.log(error)
+    } catch (err: any) {
+      const error = err.toJSON();
       dispatch(slice.actions.enqueueNotification({
         variant: 'error',
         message: error.message
       }))
+      if (error.status === 401) {
+        dispatch(setCurrentUser({
+          user: null,
+          token: null
+        }))
+      }
+      dispatch(slice.actions.setStatus('none'))
     } finally {
+      dispatch(getAllArticles())
       dispatch(slice.actions.setSelectedArticles([]))
     }
 

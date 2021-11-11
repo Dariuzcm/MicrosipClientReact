@@ -1,4 +1,5 @@
 import { ConstructionOutlined } from "@mui/icons-material";
+import { typographyClasses } from "@mui/material";
 import { Action, createSlice, PayloadAction, ThunkAction } from "@reduxjs/toolkit";
 import axios from "axios";
 import { env } from "process";
@@ -99,13 +100,43 @@ export const onLoginSubmit = (): ThunkAction<void, RootState, unknown, Action<un
           }
         }))
       }
-    } catch (error: any) {
+      dispatch(slice.actions.setPassword(''))
+    } catch (err: any) {
+      const error = err.toJSON()
       dispatch(slice.actions.setError({
         message: `${error.message}: ${error.error}`,
         type: 'error',
       }));
     } finally {
       dispatch(getAllArticles())
+    }
+  }
+}
+
+export const logOut = (): ThunkAction<void, RootState, unknown, Action<unknown>> => {
+  return async (dispatch, getState) => {
+    const token = getState().users.currentUser?.token;
+    if (!token) {
+      return;
+    }
+    try {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/users/logout`, {},
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+      dispatch(slice.actions.setCurrentUser({
+        user: null,
+        token: null
+      }))
+    } catch (error: any) {
+      dispatch(slice.actions.setError({
+        message: `${error.message}: ${error.error}`,
+        type: 'error',
+      }));
     }
   }
 }

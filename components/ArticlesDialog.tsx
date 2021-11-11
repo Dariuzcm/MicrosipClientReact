@@ -1,12 +1,14 @@
 import { Button, DialogActions, DialogContent, DialogTitle, InputLabel, OutlinedInput, Typography } from "@material-ui/core";
 import { FormControl, Grid, InputAdornment } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
+import { type } from "os";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Article } from "../Models/Articles/Article";
 import { createArticle, setActionArticle, updateArticle } from "../Models/Articles/ArticleSlice";
 import { RootState } from "../store";
 import theme from "../styles/theme";
+import { zfill } from "../utils/utils";
 
 
 export type ArticleDialogParams = {
@@ -18,8 +20,8 @@ export default function ArticleDialog(params: ArticleDialogParams) {
   const emptyArticle: Article = {
     id: new Date().getTime(),
     name: '',
-    price: 0,
-    cost: 0,
+    price: 0.00,
+    cost: 0.00,
     description: ''
   }
   const titles = {
@@ -56,21 +58,28 @@ export default function ArticleDialog(params: ArticleDialogParams) {
     setArticle(emptyArticle)
   }
   const handleChange = (prop: keyof Article) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (prop === 'cost' || prop === 'price')
-      if(!Number(event.target.value) && event.target.value ) return;
     if (prop === 'cost') {
+      let value = event.target.value;
+      const formattedvalue: number = parseFloat(value);
       const ivaArt = +event.target.value*(iva/100);
       const sum = +ivaArt + +event.target.value;
       setArticle({ 
         ...articleCreated, 
-        cost: +event.target.value,
-        price: +sum
+        cost: +formattedvalue.toFixed(2),
+        price: +sum.toFixed(2)
       });
-
+    } else if (prop === 'price') {
+      let value = event.target.value;
+      const formattedvalue: number = parseFloat(value);
+      const cost = +event.target.value/(1+ +iva/100)
+      setArticle({
+        ...articleCreated,
+        cost: +cost.toFixed(2),
+        [prop]:  +formattedvalue.toFixed(2)
+      })
     } else {
       setArticle({ ...articleCreated, [prop]: event.target.value });
     }
-    
   };
   useEffect(() => {
     setArticle(article || emptyArticle);
@@ -105,6 +114,11 @@ export default function ArticleDialog(params: ArticleDialogParams) {
                 id="outlined-adornment-cost"
                 value={articleCreated.cost}
                 onChange={handleChange('cost')}
+                required
+                inputProps={{
+                  type: 'number',
+                  min: '0'
+                }}
                 startAdornment={<InputAdornment style={{ backgroundColor: theme.palette.grey[200] }} position="start">$</InputAdornment>}
                 label="costo"
               />
@@ -113,6 +127,7 @@ export default function ArticleDialog(params: ArticleDialogParams) {
               <InputLabel htmlFor="outlined-adornment-iva">Iva {iva}%</InputLabel>
               <OutlinedInput
                 id="outlined-adornment-iva"
+                required
                 value={(articleCreated.cost * (iva / 100)).toFixed(2)}
                 disabled={true}
                 startAdornment={<InputAdornment style={{ backgroundColor: theme.palette.grey[200] }} position="start">$</InputAdornment>}
@@ -123,8 +138,13 @@ export default function ArticleDialog(params: ArticleDialogParams) {
               <InputLabel htmlFor="outlined-adornment-precio">Precio</InputLabel>
               <OutlinedInput
                 id="outlined-adornment-precio"
+                required
                 value={articleCreated.price}
                 onChange={handleChange('price')}
+                inputProps={{
+                  type: 'number',
+                  min: '0'
+                }}
                 startAdornment={<InputAdornment style={{ backgroundColor: theme.palette.grey[200] }} position="start">$</InputAdornment>}
                 label="precio"
               />
@@ -134,6 +154,7 @@ export default function ArticleDialog(params: ArticleDialogParams) {
               <OutlinedInput
                 id="outlined-adornment-description"
                 value={articleCreated.description}
+                required
                 onChange={handleChange('description')}
                 multiline
                 minRows={3}

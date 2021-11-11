@@ -6,14 +6,17 @@ import { deleteArticle, setActionArticle } from '../Models/Articles/ArticleSlice
 import SpeedDial from '@mui/material/SpeedDial';
 import SpeedDialIcon from '@mui/material/SpeedDialIcon';
 import SpeedDialAction from '@mui/material/SpeedDialAction';
+import ConfirmationDialog from './ConfirmationDialog';
+import { useState } from 'react';
 
 export default function BasicSpeedDial() {
   const state = useSelector((reduxState: RootState) => reduxState);
-  const { articles } = state.articles;
+  const { selectedArticles } = state.articles;
   const dispatch = useDispatch();
+  const [openDialog, setOpenDialog] = useState<boolean>(false)
 
   const deleteAction = () => {
-    dispatch(deleteArticle())
+    setOpenDialog(true)
   };
   const createAction = () => {
     dispatch(setActionArticle('create'));
@@ -24,6 +27,10 @@ export default function BasicSpeedDial() {
     { icon: <NoteAddOutlined />, name: 'Nuevo', action: createAction },
   ];
 
+  const handleOnCloseDialog = (accept: boolean) => {
+    if (accept) dispatch(deleteArticle());
+    setOpenDialog(false)
+  }
   return (
     <Box sx={{ height: 100, transform: 'translateZ(0px)', flexGrow: 1 }}>
       <SpeedDial
@@ -40,6 +47,12 @@ export default function BasicSpeedDial() {
           />
         ))}
       </SpeedDial>
+      <ConfirmationDialog 
+        onClose={handleOnCloseDialog} 
+        open={openDialog && selectedArticles.length > 0 } 
+        acceptText={'Confirmar'} 
+        cancelText={'Cancelar'} 
+        message={ selectedArticles.length > 1 ?`Desea eliminar los ${selectedArticles.length} articulos seleccionados?.`: 'Desea eliminar articulo seleccionado?'}/>
     </Box>
   );
 }

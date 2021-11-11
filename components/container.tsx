@@ -5,6 +5,7 @@ import { ReactChild, ReactFragment, ReactPortal, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearNotifer, getAllArticles, NorificationSnack } from '../Models/Articles/ArticleSlice';
 import { RootState } from '../store';
+import ModalCharge from './modalCharge';
 import ButtonAppBar from './toolbar';
 
 const Container = (props: { children: boolean | ReactChild | ReactFragment | ReactPortal | null | undefined; name: string; }) => {
@@ -33,8 +34,7 @@ const Container = (props: { children: boolean | ReactChild | ReactFragment | Rea
     }
     const timeout = setTimeout(() => {
       dispatch(getAllArticles());
-      console.log(state)
-    }, 7000);
+    }, 5000);
     
     const notifer = setTimeout(() => {
       for (const notif of notification) {
@@ -56,6 +56,7 @@ const Container = (props: { children: boolean | ReactChild | ReactFragment | Rea
       </Head>
       <ButtonAppBar/>
       {props.children}
+      <ModalCharge />
     </div>
   );
 }
