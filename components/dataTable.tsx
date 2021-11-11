@@ -2,8 +2,9 @@ import { DataGrid, GridCellParams, GridColDef, GridSelectionModel } from '@mui/x
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Article } from '../Models/Articles/Article';
-import { setSelectedArticles, setToEditArticle } from '../Models/Articles/ArticleSlice';
+import { setActionArticle, setMutatedArticle, setSelectedArticles } from '../Models/Articles/ArticleSlice';
 import { RootState } from '../store';
+import ArticleDialog from './ArticlesDialog';
 
 const columns: GridColDef[] = [
   { field: 'id', headerName: 'ID', width: 70 },
@@ -20,12 +21,13 @@ const formatter = new Intl.NumberFormat('en-US', {
 export default function DataTable() {
   const dispatch = useDispatch();
   const state = useSelector((reduxState: RootState) => reduxState);
-  const { articles } = state.articles;
+  const { articles, actionArticle, mutatedArticle } = state.articles;
 
   const handleOnDoubleClick = (params: GridCellParams) => {
     const { row } = params;
     const article = articles.find(art => art.id === row.id);
-    dispatch(setToEditArticle(article));
+    dispatch(setMutatedArticle(article || null));
+    dispatch(setActionArticle('edit'));
   };
 
   const formatedRows = articles.map( (article: Article) => { 
@@ -37,7 +39,7 @@ export default function DataTable() {
   });
   
   const handleOnSelected = (params: GridSelectionModel) => {
-    const selectedItems = articles.filter( item => params.includes(item.id));
+    const selectedItems = articles.filter((item: Article) => params.includes(item.id));
     dispatch(setSelectedArticles(selectedItems));
   }
 
@@ -53,6 +55,8 @@ export default function DataTable() {
         onSelectionModelChange={handleOnSelected}
         onCellDoubleClick={handleOnDoubleClick}
       />
+      <ArticleDialog actionType={actionArticle} article={mutatedArticle} open={actionArticle ? true : false}/>
+
     </div>
   );
 }

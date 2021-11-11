@@ -1,23 +1,26 @@
 import * as React from 'react';
-import AppBar from '@mui/material/AppBar';
-import Box from '@mui/material/Box';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircle from '@mui/icons-material/AccountCircle';
-import { Menu, MenuItem } from '@mui/material';
+import { useRouter } from 'next/router';
+import { AppBar, Box, Menu, MenuItem, Toolbar } from '@material-ui/core';
+import { Typography } from '@mui/material';
+
 
 export default function ButtonAppBar() {
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  
+  const router = useRouter();
+
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
+
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  const navigation = router.pathname;
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -33,7 +36,7 @@ export default function ButtonAppBar() {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            News
+            {navigation === '/' ? 'Administración de Articulos': navigation}
           </Typography>
           <div>
               <IconButton
@@ -61,8 +64,7 @@ export default function ButtonAppBar() {
                 open={Boolean(anchorEl)}
                 onClose={handleClose}
               >
-                <MenuItem onClick={handleClose}>Profile</MenuItem>
-                <MenuItem onClick={handleClose}>My account</MenuItem>
+                <MenuItem onClick={handleClose}>Desconectar</MenuItem>
               </Menu>
             </div>
         </Toolbar>

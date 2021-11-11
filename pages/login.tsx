@@ -1,13 +1,15 @@
+/* eslint-disable @next/next/no-title-in-document-head */
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-import { Button, Card, CircularProgress, Collapse, Container, FormControl, FormHelperText, Grid, IconButton, Input, InputLabel, TextField, Typography } from "@mui/material";
+import { Alert, Button, Card, CircularProgress, Collapse, Container, FormControl, FormHelperText, Grid, IconButton, Input, InputLabel, TextField, Typography } from "@mui/material";
 import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
 import { InputAdornment } from '@material-ui/core';
 import { NextPage } from "next";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { onLoginSubmit, setLoginState, setPassword, setUsername } from "../Models/Users/UsersSlice";
-import Router from 'next/router';
+import Router, { useRouter } from 'next/router';
+import Head from 'next/head';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -28,6 +30,8 @@ const Login: NextPage = () => {
   const classes = useStyles();
   const dispatch = useDispatch();
   const state = useSelector((reduxState: RootState) => reduxState);
+  const { loginError } = state.users;
+  const token = state.users.currentUser.token;
   const { username, password, status } = state.users.loggValues;
 
   const [visibility, setVisibility] = useState<Boolean>(false);
@@ -61,12 +65,14 @@ const Login: NextPage = () => {
       err = 'Campo Requerido';
     } else if (name === 'password') {
       if (!password) err = 'Campo Requerido';
-      else if (password.length < 7) err = 'Password inválido';
+      else if (password.length < 8) err = 'Password inválido';
     }
     setErrors({
       ...errors,
       [name]: err,
     });
+    if(err !== '') 
+      dispatch(setLoginState('none'))
     return !!err;
   };
 
@@ -75,6 +81,7 @@ const Login: NextPage = () => {
     if (handleBlur('username') || handleBlur('password')) {
       return;
     }
+    dispatch(onLoginSubmit())
     if(status === 'ok') {
       Router.push('/');
     }
@@ -90,7 +97,6 @@ const Login: NextPage = () => {
         dispatch(setPassword(value));
         break;
     }
-    console.log(handleBlur('username') || handleBlur('password'));
     if (handleBlur('username') || handleBlur('password')) {
       dispatch(setLoginState('none'))
 
@@ -99,7 +105,18 @@ const Login: NextPage = () => {
     dispatch(setLoginState('ok'))
   };
 
+  const router = useRouter();
+  const name = router.pathname.split('/');
+
+  useEffect(()=>{
+    if(token) router.push('/');
+  }, [token])
+  
   return (
+  <div>
+    <Head>
+      <title>{name}</title>
+    </Head>
     <form onSubmit={handleOnSubmit}>
       <Container maxWidth="xs" className={classes.root} component={Card}>
         <Grid container spacing={2}>
@@ -111,8 +128,8 @@ const Login: NextPage = () => {
               variant="standard"
               fullWidth
               name="username"
-              label={' Nombre de Usuario'}
-              value={username}
+              label={'Nombre de Usuario'}
+              value={username || ''}
               onChange={handleChange}
               onInput={(e) => handleInput(e as React.ChangeEvent<HTMLInputElement>)}
               onBlur={() => handleBlur('username')}
@@ -123,11 +140,11 @@ const Login: NextPage = () => {
 
           <Grid item xs={12}>
             <FormControl fullWidth error={!!errors.password}>
-              <InputLabel htmlFor="password-input">{'password'}</InputLabel>
+              <InputLabel htmlFor="password-input">{'Contraseña'}</InputLabel>
               <Input
                 id="password-input"
                 type={visibility ? 'text' : 'password'}
-                value={password}
+                value={password || ''}
                 name="password"
                 onChange={handleChange}
                 endAdornment={endAdornment}
@@ -141,17 +158,22 @@ const Login: NextPage = () => {
           <Grid item xs={12} />
 
           <Grid item xs={12}>
-            <Button fullWidth variant="contained" color="primary" type="submit" disabled={status !== 'ok'}>
+            <Button fullWidth variant="contained" size="large" color="primary" type="submit" disabled={status !== 'ok'}>
               {'Entrar'}
             </Button>
           </Grid>
         </Grid>
+        <Grid alignContent="center" alignItems={'center'} maxWidth={'100%'}>
+          <Collapse data-tid="loginStatus" in={loginError? true : false} className={classes.loaderWrapper} unmountOnExit>
+            <Alert severity={loginError?.type}>{loginError?.message}</Alert>
+          </Collapse>
+          <Collapse data-tid="loginStatus" in={status === 'loading' && !loginError} className={classes.loaderWrapper} unmountOnExit>
+            <CircularProgress aria-label={'Cargando...'} />
+          </Collapse>
+        </Grid>
       </Container>
-
-      <Collapse data-tid="loginStatus" in={status === 'loading'} className={classes.loaderWrapper} unmountOnExit>
-        <CircularProgress aria-label={'Cargando...'} />
-      </Collapse>
     </form>
+  </div>
   )
 }
 
